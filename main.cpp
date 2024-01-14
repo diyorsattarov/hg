@@ -7,6 +7,10 @@ const std::string kDbUser = "user";
 const std::string kDbPassword = "password";
 const std::string kDbHost = "172.19.0.2";
 const int kDbPort = 5432;
+const std::string kGetEndpoint = R"(/get/(\d+))";
+const std::string kInsertEndpoint = R"(/insert/(\d+))";
+const std::string kUpdateEndpoint = R"(/update/(\d+))";
+const std::string kDeleteEndpoint = R"(/delete/(\d+))";
 
 enum class Month {
   January = 1,
@@ -52,27 +56,27 @@ void handle_get(const httplib::Request &req, httplib::Response &res) {
       "SELECT * FROM " + getMonthString(static_cast<Month>(month)) + ";";
 
   // Log the query for debugging
-  std::cout << "Executing get query: " << query << std::endl;
+  //std::cout << "Executing get query: " << query << std::endl;
 
   // Execute the SQL select query
   if (dbConnector.connect()) {
     pqxx::result result = dbConnector.executeQuery(query);
 
     // Log the result for debugging
-    std::cout << "Query result: " << result.size() << " rows" << std::endl;
+    //std::cout << "Query result: " << result.size() << " rows" << std::endl;
 
-    // Convert the result to a nicely formatted string
-    std::ostringstream formatted_result;
+    // Convert the result to JSON format
+    json jsonResult;
     for (const auto &row : result) {
-      for (const auto &field : row) {
-        formatted_result << field.c_str() << "\t"; // Add tab as a delimiter
+      json jsonRow;
+      for (size_t i = 0; i < row.size(); ++i) {
+        jsonRow[std::to_string(i)] = row[i].c_str();
       }
-      formatted_result << "\n"; // Add newline after each row
+      jsonResult.push_back(jsonRow);
     }
 
-    // Set the response content with the nicely formatted SQL query result as
-    // plaintext
-    res.set_content(formatted_result.str(), "text/plain");
+    // Set the response content with the JSON-formatted result
+    res.set_content(jsonResult.dump(), "application/json");
   } else {
     res.set_content("Failed to execute SQL select query", "text/plain");
   }
@@ -105,16 +109,13 @@ void handle_post(const httplib::Request &req, httplib::Response &res) {
     json data = json::parse(req.body);
 
     // Check if necessary parameters are present
-    if (!data.contains("columns") ||
-        !data.contains("values")) {
-      res.set_content(
-          "Missing required parameters (columns, and/or values)",
-          "text/plain");
+    if (!data.contains("columns") || !data.contains("values")) {
+      res.set_content("Missing required parameters (columns, and/or values)",
+                      "text/plain");
       return;
     }
-    
-    std::string table =
-    getMonthString(static_cast<Month>(month));
+
+    std::string table = getMonthString(static_cast<Month>(month));
     std::vector<std::string> columns = data["columns"];
     std::vector<std::string> values = data["values"];
 
@@ -146,16 +147,15 @@ void handle_update(const httplib::Request &req, httplib::Response &res) {
   json data = json::parse(req.body);
 
   // Check if necessary parameters are present
-  if (!data.contains("columns") ||
-      !data.contains("values") || !data.contains("where")) {
+  if (!data.contains("columns") || !data.contains("values") ||
+      !data.contains("where")) {
     res.set_content(
         "Missing required parameters (table, columns, values, and/or where)",
         "text/plain");
     return;
   }
 
-  std::string table =
-    getMonthString(static_cast<Month>(month));
+  std::string table = getMonthString(static_cast<Month>(month));
   std::vector<std::string> columns = data["columns"];
   std::vector<std::string> values = data["values"];
   std::string where_clause = data["where"];
@@ -238,24 +238,24 @@ int main() {
   httplib::Server server;
 
   // Get endpoint with a placeholder for the month
-  server.Get(R"(/get/(\d+))",
+  server.Get(kGetEndpoint,
              [](const httplib::Request &req, httplib::Response &res) {
                handle_get(req, res);
              });
 
   // Post endpoint for insert with integer month
-  server.Post(R"(/insert/(\d+))",
+  server.Post(kInsertEndpoint,
               [](const httplib::Request &req, httplib::Response &res) {
                 handle_post(req, res);
               });
 
   // Put endpoint for update
-  server.Put(R"(/update/(\d+))",
+  server.Put(kUpdateEndpoint,
              [](const httplib::Request &req, httplib::Response &res) {
                handle_update(req, res);
              });
 
-  server.Delete(R"(/delete/(\d+))",
+  server.Delete(kDeleteEndpoint,
                 [](const httplib::Request &req, httplib::Response &res) {
                   handle_delete(req, res);
                 });
