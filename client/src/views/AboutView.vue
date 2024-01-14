@@ -45,22 +45,19 @@ export default {
     return {
       loading: true,
       result: null,
-      jsonInput: '', // Added data property for JSON input
-      selectedMethod: 'POST', // Default selected HTTP method
-      updatedResult: null, // Added data property for updated result
+      jsonInput: '',
+      selectedMethod: 'POST',
+      updatedResult: null,
     };
   },
   mounted() {
-    // Fetch data from the server
     this.fetchData();
   },
   methods: {
     fetchData() {
-      // Use Fetch API or Axios to make a GET request to the server
       fetch('http://localhost:3000/get/1')
         .then((response) => response.json())
         .then((data) => {
-          // Update the component state with the fetched data
           this.loading = false;
           this.result = data;
         })
@@ -71,23 +68,19 @@ export default {
         });
     },
     formatDate(dateString) {
-      // Format the date without the year in 24-hour format
       const date = new Date(dateString);
       const options = { hour: 'numeric', minute: 'numeric', hour12: false };
       return date.toLocaleDateString('en-US', options);
     },
     sendRequest() {
-      // Define the base endpoint
       let endpoint = '/insert/1';
 
-      // Update the endpoint based on the selected HTTP method
       if (this.selectedMethod === 'PUT') {
         endpoint = '/update/1';
       } else if (this.selectedMethod === 'DELETE') {
         endpoint = '/delete/1';
       }
 
-      // Construct the full endpoint
       const fullEndpoint = `http://localhost:3000${endpoint}`;
 
       const requestOptions = {
@@ -98,12 +91,12 @@ export default {
         body: this.jsonInput,
       };
 
-      // Send the request to the dynamically generated endpoint
       fetch(fullEndpoint, requestOptions)
         .then((response) => response.json())
         .then((data) => {
-          // Update the component state with the updated result
           this.updatedResult = data;
+          // Display the response beneath the form
+          alert(`Response: ${JSON.stringify(data)}`);
         })
         .catch((error) => {
           console.error('Error sending request:', error);
@@ -113,6 +106,7 @@ export default {
   },
 };
 </script>
+
 
 <style>
 @media (min-width: 1024px) {
