@@ -83,6 +83,10 @@ To use this application, follow these steps:
 
 - [docker](https://github.com/docker): Docker is an open platform for developing, shipping, and running applications
 
+- [vue](https://github.com/vuejs/core): Vue.js is a progressive, incrementally-adoptable JavaScript framework for building UI on the web.
+
+- [express](https://github.com/expressjs/express): Fast, unopinionated, minimalist web framework for node.
+
 ## Note:
 
 Ensure to customize the database connection details and handle security considerations, such as input validation and authentication, based on your specific use case and deployment environment.
