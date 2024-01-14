@@ -2,6 +2,12 @@
 #include <iostream>
 #include "db.h"
 
+const std::string kDbName = "database_2024";
+const std::string kDbUser = "user";
+const std::string kDbPassword = "password";
+const std::string kDbHost = "172.19.0.2";
+const int kDbPort = 5432;
+
 enum class Month {
   January = 1,
   February,
@@ -18,9 +24,9 @@ enum class Month {
 };
 
 std::unordered_map<int, std::string> monthToString{
-    {1, "January"},   {2, "February"}, {3, "March"},     {4, "April"},
-    {5, "May"},       {6, "June"},     {7, "July"},      {8, "August"},
-    {9, "September"}, {10, "October"}, {11, "November"}, {12, "December"}};
+    {1, "JANUARY"},   {2, "FEBRUARY"}, {3, "MARCH"},     {4, "APRIL"},
+    {5, "MAY"},       {6, "JUNE"},     {7, "JULY"},      {8, "AUGUST"},
+    {9, "SEPTEMBER"}, {10, "OCTOBER"}, {11, "NOVEMBER"}, {12, "DECEMBER"}};
 
 std::string getMonthString(Month month) {
   auto it = monthToString.find(static_cast<int>(month));
@@ -39,8 +45,8 @@ void handle_get(const httplib::Request &req, httplib::Response &res) {
   }
 
   // Create DatabaseConnector instance
-  DatabaseConnector dbConnector("database_2024", "user", "password",
-                                "172.19.0.2", 5432);
+  DatabaseConnector dbConnector(kDbName, kDbUser, kDbPassword,
+                                kDbHost, kDbPort);
   // Construct the SQL select query using the provided month
   std::string query =
       "SELECT * FROM " + getMonthString(static_cast<Month>(month)) + ";";
@@ -74,8 +80,8 @@ void handle_get(const httplib::Request &req, httplib::Response &res) {
 
 void handle_post(const httplib::Request &req, httplib::Response &res) {
   // Create DatabaseConnector instance
-  DatabaseConnector dbConnector("database_2024", "user", "password",
-                                "172.19.0.2", 5432);
+  DatabaseConnector dbConnector(kDbName, kDbUser, kDbPassword,
+                                kDbHost, kDbPort);
 
   // Check if the request body is not empty and is valid JSON
   if (req.body.empty() || req.body[0] != '{') {
@@ -143,8 +149,8 @@ void handle_update(const httplib::Request &req, httplib::Response &res) {
   std::string where_clause = data["where"];
 
   // Create DatabaseConnector instance
-  DatabaseConnector dbConnector("database_2024", "user", "password",
-                                "172.19.0.2", 5432);
+  DatabaseConnector dbConnector(kDbName, kDbUser, kDbPassword,
+                                kDbHost, kDbPort);
 
   // Construct the SQL update query using the provided month and clauses
   std::string set_clause;
@@ -185,18 +191,18 @@ void handle_delete(const httplib::Request &req, httplib::Response &res) {
   json data = json::parse(req.body);
 
   // Check if necessary parameters are present
-  if (!data.contains("table") || !data.contains("where")) {
+  if (!data.contains("where")) {
     res.set_content("Missing required parameters (table and/or where)",
                     "text/plain");
     return;
   }
 
-  std::string table = data["table"];
+  std::string table = getMonthString(static_cast<Month>(month));
   std::string where_clause = data["where"];
 
   // Create DatabaseConnector instance
-  DatabaseConnector dbConnector("database_2024", "user", "password",
-                                "172.19.0.2", 5432);
+  DatabaseConnector dbConnector(kDbName, kDbUser, kDbPassword,
+                                kDbHost, kDbPort);
 
   // Construct the SQL delete query using the provided month and clauses
   std::string query = "DELETE FROM " +
