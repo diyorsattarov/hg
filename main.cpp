@@ -102,9 +102,6 @@ void handle_request(const httplib::Request &req, httplib::Response &res) {
       }
     }
 
-    std::string query = "UPDATE " + getMonthString(static_cast<Month>(month)) +
-                        " SET " + set_clause + " WHERE " + where_clause + ";";
-
     if (dbConnector.connect()) {
       dbConnector.executeUpdate(table, set_clause, where_clause);
       res.set_content("SQL update query executed successfully", "text/plain");
