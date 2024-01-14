@@ -140,7 +140,6 @@ void handle_request(const httplib::Request &req, httplib::Response &res) {
   }
 }
 
-
 int main() {
   httplib::Server server;
 
@@ -153,7 +152,6 @@ int main() {
              [](const httplib::Request &req, httplib::Response &res) {
                handle_request(req, res);
              });
-
 
   server.Put(kUpdateEndpoint,
              [](const httplib::Request &req, httplib::Response &res) {
