@@ -26,7 +26,9 @@ To use this application, follow these steps:
     ```
 
 - **POST /insert**: Insert data into the database. Requires a JSON payload with the `table`, `columns`, and `values` parameters.
-    ```/insert/{month} (POST)```
+    ```
+    /insert/{month} (POST)
+    ```
 
     ```
     {
@@ -58,7 +60,9 @@ To use this application, follow these steps:
     ```
 
 - **DELETE /delete/{month}**: Delete data from the database for a specific month. Requires a JSON payload with the `table` and `where` parameters.
-    ```http://localhost:8080/delete/1```
+    ```
+    http://localhost:8080/delete/1
+    ```
 
     ```
     {
@@ -66,7 +70,9 @@ To use this application, follow these steps:
     }
     ```
 
-    ```SQL delete query executed successfully```
+    ```
+    SQL delete query executed successfully
+    ```
 ## Dependencies:
 
 - [httplib](https://github.com/yhirose/cpp-httplib): C++ HTTP library for handling HTTP requests and responses.
@@ -74,6 +80,8 @@ To use this application, follow these steps:
 - [nlohmann/json](https://github.com/nlohmann/json): JSON library for C++.
 
 - [pqxx](https://github.com/jtv/libpqxx): C++ library for interacting with PostgreSQL databases.
+
+- [docker](https://github.com/docker): Docker is an open platform for developing, shipping, and running applications
 
 ## Note:
 
