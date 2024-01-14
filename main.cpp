@@ -48,15 +48,43 @@ public:
         }
     }
 
-    bool executeInsert(const std::string& table, int day_id, const std::string& task) {
+    /* Needs to parameters table, column<vector>, value<vector> */
+    // do we treat everything as strings for simplicty? most likely json is the answer..
+    bool executeInsert(const std::string& table, const std::vector<std::string>& columns, const std::vector<std::string>& values) {
         try {
             if (!is_open_) {
                 std::cerr << "Database connection is not open." << std::endl;
                 return false;
             }
 
+            // Check if the number of columns and values match
+            if (columns.size() != values.size()) {
+                std::cerr << "Number of columns and values do not match." << std::endl;
+                return false;
+            }
+
             // Construct the SQL insert query
-            std::string query = "INSERT INTO " + table + " (day_id, task) VALUES (" + std::to_string(day_id) + ", '" + task + "')";
+            std::string query = "INSERT INTO " + table + " (";
+
+            // Append column names
+            for (size_t i = 0; i < columns.size(); ++i) {
+                query += columns[i];
+                if (i < columns.size() - 1) {
+                    query += ", ";
+                }
+            }
+
+            query += ") VALUES (";
+
+            // Append values
+            for (size_t i = 0; i < values.size(); ++i) {
+                query += "'" + values[i] + "'";
+                if (i < values.size() - 1) {
+                    query += ", ";
+                }
+            }
+
+            query += ")";
 
             pqxx::work txn(*connection_);
             txn.exec(query);
@@ -67,6 +95,7 @@ public:
             return false;
         }
     }
+
 
 private:
     std::unique_ptr<pqxx::connection> connection_;
@@ -123,17 +152,17 @@ void handle_post(const httplib::Request& req, httplib::Response& res) {
         json data = json::parse(req.body);
 
         // Check if necessary parameters are present
-        if (!data.contains("table") || !data.contains("day_id") || !data.contains("task")) {
-            res.set_content("Missing required parameters (table, day_id, and/or task)", "text/plain");
+        if (!data.contains("table") || !data.contains("columns") || !data.contains("values")) {
+            res.set_content("Missing required parameters (table, columns, and/or values)", "text/plain");
             return;
         }
 
         std::string table = data["table"];
-        int day_id = data["day_id"];
-        std::string task = data["task"];
+        std::vector<std::string> columns = data["columns"];
+        std::vector<std::string> values = data["values"];
 
         // Execute the SQL insert query
-        if (dbConnector.connect() && dbConnector.executeInsert(table, day_id, task)) {
+        if (dbConnector.connect() && dbConnector.executeInsert(table, columns, values)) {
             res.set_content("SQL insert query executed successfully", "text/plain");
         } else {
             res.set_content("Failed to execute SQL insert query", "text/plain");
