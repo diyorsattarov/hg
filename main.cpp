@@ -1,6 +1,6 @@
+#include "include/db.h"
 #include <httplib.h>
 #include <iostream>
-#include "include/db.h"
 
 const std::string kDbName = "database_2024";
 const std::string kDbUser = "user";
@@ -45,8 +45,8 @@ void handle_get(const httplib::Request &req, httplib::Response &res) {
   }
 
   // Create DatabaseConnector instance
-  DatabaseConnector dbConnector(kDbName, kDbUser, kDbPassword,
-                                kDbHost, kDbPort);
+  DatabaseConnector dbConnector(kDbName, kDbUser, kDbPassword, kDbHost,
+                                kDbPort);
   // Construct the SQL select query using the provided month
   std::string query =
       "SELECT * FROM " + getMonthString(static_cast<Month>(month)) + ";";
@@ -79,9 +79,19 @@ void handle_get(const httplib::Request &req, httplib::Response &res) {
 }
 
 void handle_post(const httplib::Request &req, httplib::Response &res) {
+  // Extract the month from the URL
+  std::string month_str = req.matches[1];
+  int month = std::stoi(month_str);
+
+  // Check if the month is valid (1 to 12)
+  if (month < 1 || month > 12) {
+    res.set_content("Invalid month", "text/plain");
+    return;
+  }
+
   // Create DatabaseConnector instance
-  DatabaseConnector dbConnector(kDbName, kDbUser, kDbPassword,
-                                kDbHost, kDbPort);
+  DatabaseConnector dbConnector(kDbName, kDbUser, kDbPassword, kDbHost,
+                                kDbPort);
 
   // Check if the request body is not empty and is valid JSON
   if (req.body.empty() || req.body[0] != '{') {
@@ -95,15 +105,16 @@ void handle_post(const httplib::Request &req, httplib::Response &res) {
     json data = json::parse(req.body);
 
     // Check if necessary parameters are present
-    if (!data.contains("table") || !data.contains("columns") ||
+    if (!data.contains("columns") ||
         !data.contains("values")) {
       res.set_content(
-          "Missing required parameters (table, columns, and/or values)",
+          "Missing required parameters (columns, and/or values)",
           "text/plain");
       return;
     }
-
-    std::string table = data["table"];
+    
+    std::string table =
+    getMonthString(static_cast<Month>(month));
     std::vector<std::string> columns = data["columns"];
     std::vector<std::string> values = data["values"];
 
@@ -135,7 +146,7 @@ void handle_update(const httplib::Request &req, httplib::Response &res) {
   json data = json::parse(req.body);
 
   // Check if necessary parameters are present
-  if (!data.contains("table") || !data.contains("columns") ||
+  if (!data.contains("columns") ||
       !data.contains("values") || !data.contains("where")) {
     res.set_content(
         "Missing required parameters (table, columns, values, and/or where)",
@@ -143,14 +154,15 @@ void handle_update(const httplib::Request &req, httplib::Response &res) {
     return;
   }
 
-  std::string table = data["table"];
+  std::string table =
+    getMonthString(static_cast<Month>(month));
   std::vector<std::string> columns = data["columns"];
   std::vector<std::string> values = data["values"];
   std::string where_clause = data["where"];
 
   // Create DatabaseConnector instance
-  DatabaseConnector dbConnector(kDbName, kDbUser, kDbPassword,
-                                kDbHost, kDbPort);
+  DatabaseConnector dbConnector(kDbName, kDbUser, kDbPassword, kDbHost,
+                                kDbPort);
 
   // Construct the SQL update query using the provided month and clauses
   std::string set_clause;
@@ -201,8 +213,8 @@ void handle_delete(const httplib::Request &req, httplib::Response &res) {
   std::string where_clause = data["where"];
 
   // Create DatabaseConnector instance
-  DatabaseConnector dbConnector(kDbName, kDbUser, kDbPassword,
-                                kDbHost, kDbPort);
+  DatabaseConnector dbConnector(kDbName, kDbUser, kDbPassword, kDbHost,
+                                kDbPort);
 
   // Construct the SQL delete query using the provided month and clauses
   std::string query = "DELETE FROM " +
@@ -231,9 +243,11 @@ int main() {
                handle_get(req, res);
              });
 
-  // Post endpoint for insert
-  server.Post("/insert", [](const httplib::Request &req,
-                            httplib::Response &res) { handle_post(req, res); });
+  // Post endpoint for insert with integer month
+  server.Post(R"(/insert/(\d+))",
+              [](const httplib::Request &req, httplib::Response &res) {
+                handle_post(req, res);
+              });
 
   // Put endpoint for update
   server.Put(R"(/update/(\d+))",

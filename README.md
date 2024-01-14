@@ -17,12 +17,56 @@ To use this application, follow these steps:
 
 - **GET /get/{month}**: Retrieve data for a specific month from the database.
 
+    ```
+    http://localhost:8080/get/1
+    ```
+
+    ```
+    some task	2024-01-14 06:33:00	2024-01-14 06:35:00	14	1
+    ```
+
 - **POST /insert**: Insert data into the database. Requires a JSON payload with the `table`, `columns`, and `values` parameters.
+    ```/insert/{month} (POST)```
+
+    ```
+    {
+        "columns": ["day_id", "task"],
+        "values": ["14", "another_task"]
+    }
+    ```
+
+    ```
+    SQL insert query executed successfully
+    ```
 
 - **PUT /update/{month}**: Update data in the database for a specific month. Requires a JSON payload with the `table`, `columns`, `values`, and `where` parameters.
 
-- **DELETE /delete/{month}**: Delete data from the database for a specific month. Requires a JSON payload with the `table` and `where` parameters.
+    ```
+    http://localhost:8080/update/1
+    ```
 
+    ```
+    {
+        "columns": ["task"],           // Specify the column you want to update
+        "values": ["updated_value"],   // Specify the new value
+        "where": "task_id=12"          // Specify the condition for the update
+    }
+    ```
+
+    ```
+    SQL update query executed successfully
+    ```
+
+- **DELETE /delete/{month}**: Delete data from the database for a specific month. Requires a JSON payload with the `table` and `where` parameters.
+    ```http://localhost:8080/delete/1```
+
+    ```
+    {
+        "where": "task_id=11"
+    }
+    ```
+
+    ```SQL delete query executed successfully```
 ## Dependencies:
 
 - [httplib](https://github.com/yhirose/cpp-httplib): C++ HTTP library for handling HTTP requests and responses.
