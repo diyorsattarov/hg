@@ -32,15 +32,27 @@ void handle_request(const httplib::Request &req, httplib::Response &res) {
         "SELECT * FROM " + getMonthString(static_cast<Month>(month)) + ";";
 
     if (dbConnector.connect()) {
+      // Fetch both column names and data
       pqxx::result result = dbConnector.executeQuery(query);
       json jsonResult;
+
+      // Extract column names
+      json columnNames;
+      for (size_t i = 0; i < result.columns(); ++i) {
+        columnNames.push_back(result.column_name(i));
+      }
+      jsonResult["columns"] = columnNames;
+
+      // Extract data rows
+      json dataRows;
       for (const auto &row : result) {
         json jsonRow;
         for (size_t i = 0; i < row.size(); ++i) {
-          jsonRow[std::to_string(i)] = row[i].c_str();
+          jsonRow[result.column_name(i)] = row[i].c_str();
         }
-        jsonResult.push_back(jsonRow);
+        dataRows.push_back(jsonRow);
       }
+      jsonResult["data"] = dataRows;
 
       res.set_content(jsonResult.dump(), "application/json");
     } else {
