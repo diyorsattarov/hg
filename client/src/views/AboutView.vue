@@ -11,12 +11,12 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="row in result" :key="row['0']">
-            <td v-for="(value, key) in row" :key="key">
-              <!-- Check if the value is a date to remove the year -->
-              <span v-if="key === '1' || key === '2'">{{ formatDate(value) }}</span>
-              <span v-else>{{ value }}</span>
-            </td>
+          <tr v-for="row in sortedResult" :key="row.task_id">
+            <td>{{ row.task_id }}</td>
+            <td>{{ row.task }}</td>
+            <td>{{ row.day_id }}</td>
+            <td>{{ formatDate(row.start_datetime) }}</td>
+            <td>{{ formatDate(row.end_datetime) }}</td>
           </tr>
         </tbody>
       </table>
@@ -27,19 +27,112 @@
         <pre>{{ JSON.stringify(updatedResult, null, 2) }}</pre>
       </div>
 
-      <div class="request-form">
-        <h2>Make a Request</h2>
-        <label for="jsonInput">JSON Input:</label>
-        <textarea v-model="jsonInput" id="jsonInput"></textarea>
+      <!-- Insert Form -->
+      <div class="request-form" style="text-align: center;">
+        <h2>Insert Data</h2>
 
-        <label for="httpMethod">HTTP Method:</label>
-        <select v-model="selectedMethod" id="httpMethod">
-          <option value="POST">POST</option>
-          <option value="PUT">PUT</option>
-          <option value="DELETE">DELETE</option>
-        </select>
+        <!-- Input field for "task" column -->
+        <div>
+          <label for="taskInput">Task:</label>
+          <input v-model="taskInput" id="taskInput" />
+        </div>
 
-        <button @click="sendRequest">Send Request</button>
+        <!-- Input field for "start_datetime" column -->
+        <div>
+          <label for="startDatetimeInput">Start Datetime:</label>
+          <input v-model="startDatetimeInput" id="startDatetimeInput" />
+        </div>
+
+        <!-- Input field for "end_datetime" column -->
+        <div>
+          <label for="endDatetimeInput">End Datetime:</label>
+          <input v-model="endDatetimeInput" id="endDatetimeInput" />
+        </div>
+
+        <!-- Input field for "day_id" column -->
+        <div>
+          <label for="dayIdInput">Day ID:</label>
+          <input v-model="dayIdInput" id="dayIdInput" />
+        </div>
+
+        <div>
+          <label for="taskIdInput">Task ID:</label>
+          <input v-model="taskIdInput" id="taskIdInput" />
+        </div>
+
+        <!-- Dropdown for HTTP Method -->
+        <div>
+          <label for="httpMethodInsert">HTTP Method:</label>
+          <select v-model="selectedMethodInsert" id="httpMethodInsert">
+            <option value="POST">POST</option>
+          </select>
+        </div>
+
+        <button @click="insertData">Insert Data</button>
+      </div>
+
+      <!-- Update Form -->
+      <div class="request-form" style="text-align: center;">
+        <h2>Update Data</h2>
+
+        <!-- Input field for "task" column -->
+        <div>
+          <label for="taskUpdateInput">Task:</label>
+          <input v-model="taskUpdateInput" id="taskUpdateInput" />
+        </div>
+
+        <!-- Input field for "start_datetime" column -->
+        <div>
+          <label for="startDatetimeUpdateInput">Start Datetime:</label>
+          <input v-model="startDatetimeUpdateInput" id="startDatetimeUpdateInput" />
+        </div>
+
+        <!-- Input field for "end_datetime" column -->
+        <div>
+          <label for="endDatetimeUpdateInput">End Datetime:</label>
+          <input v-model="endDatetimeUpdateInput" id="endDatetimeUpdateInput" />
+        </div>
+
+        <!-- Input field for "day_id" column -->
+        <div>
+          <label for="dayIdUpdateInput">Day ID:</label>
+          <input v-model="dayIdUpdateInput" id="dayIdUpdateInput" />
+        </div>
+
+        <div>
+          <label for="taskIdUpdateInput">Task ID:</label>
+          <input v-model="taskIdUpdateInput" id="taskIdUpdateInput" />
+        </div>
+
+        <!-- Dropdown for HTTP Method -->
+        <div>
+          <label for="httpMethodUpdate">HTTP Method:</label>
+          <select v-model="selectedMethodUpdate" id="httpMethodUpdate">
+            <option value="PUT">PUT</option>
+          </select>
+        </div>
+
+        <button @click="updateData">Update Data</button>
+      </div>
+
+      <!-- Delete Form -->
+      <div class="request-form" style="text-align: center;">
+        <h2>Delete Data</h2>
+
+        <div>
+          <label for="taskIdDeleteInput">Task ID:</label>
+          <input v-model="taskIdDeleteInput" id="taskIdDeleteInput" />
+        </div>
+
+        <!-- Dropdown for HTTP Method -->
+        <div>
+          <label for="httpMethodDelete">HTTP Method:</label>
+          <select v-model="selectedMethodDelete" id="httpMethodDelete">
+            <option value="DELETE">DELETE</option>
+          </select>
+        </div>
+
+        <button @click="deleteData">Delete Data</button>
       </div>
     </div>
   </div>
@@ -53,11 +146,29 @@ export default {
       result: null,
       jsonInput: '',
       selectedMethod: 'POST',
+      selectedMethodInsert: 'POST',
+      taskInput: '',
+      taskIdInput: '',
+      startDatetimeInput: '',
+      endDatetimeInput: '',
+      dayIdInput: '',
       updatedResult: null,
     };
   },
   mounted() {
     this.fetchData();
+  },
+  computed: {
+    sortedResult() {
+      return this.result.data.slice().sort((a, b) => {
+        // Convert the date strings to Date objects for proper comparison
+        const dateA = new Date(a.start_datetime);
+        const dateB = new Date(b.start_datetime);
+
+        // Sort in descending order (most recent to latest)
+        return dateB - dateA;
+      });
+    },
   },
   methods: {
     fetchData() {
@@ -109,6 +220,101 @@ export default {
           this.updatedResult = 'Error sending request';
         });
     },
+    insertData() {
+      const fullEndpoint = 'http://localhost:3000/insert/1';
+
+      const requestData = {
+        columns: ["task", "start_datetime", "end_datetime", "day_id"],
+        values: [this.taskInput, this.startDatetimeInput, this.endDatetimeInput, this.dayIdInput],
+      };
+
+      const requestOptions = {
+        method: this.selectedMethodInsert,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      };
+
+      fetch(fullEndpoint, requestOptions)
+        .then((response) => response.json())
+        .then((data) => {
+          this.updatedResult = data;
+          // Update the table data after a successful request
+          this.fetchData();
+        })
+        .catch((error) => {
+          console.error('Error inserting data:', error);
+          this.updatedResult = 'Error inserting data';
+        });
+    },
+    updateData() {
+      const fullEndpoint = `http://localhost:3000/update/1`;
+
+      // Get the column names from the fetched data
+      const columnNames = Object.keys(this.result[0]);
+
+      const requestData = {
+        columns: columnNames,
+        values: [],
+        where: `task_id='${this.taskIdUpdateInput}' AND day_id='${this.dayIdUpdateInput}'`, // Assuming 'task_id' is the unique identifier
+      };
+
+      // Add fields to requestData.values only if they have a value
+      columnNames.forEach((columnName) => {
+        if (this[columnName + 'UpdateInput']) {
+          requestData.values.push(this[columnName + 'UpdateInput']);
+        }
+      });
+
+      const requestOptions = {
+        method: this.selectedMethodUpdate,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      };
+
+      fetch(fullEndpoint, requestOptions)
+        .then((response) => response.json())
+        .then((data) => {
+          this.updatedResult = data;
+          // Update the table data after a successful request
+          this.fetchData();
+        })
+        .catch((error) => {
+          console.error('Error updating data:', error);
+          this.updatedResult = 'Error updating data';
+        });
+    },
+
+    deleteData() {
+      const fullEndpoint = `http://localhost:3000/delete/1`;
+
+      const requestData = {
+        where: `task_id='${this.taskIdDeleteInput}'`, // Assuming 'task_id' is the unique identifier
+      };
+
+      const requestOptions = {
+        method: this.selectedMethodDelete,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      };
+
+      fetch(fullEndpoint, requestOptions)
+        .then((response) => response.json())
+        .then((data) => {
+          this.updatedResult = data;
+          // Update the table data after a successful request
+          this.fetchData();
+        })
+        .catch((error) => {
+          console.error('Error deleting data:', error);
+          this.updatedResult = 'Error deleting data';
+        });
+    },
   },
 };
 </script>
@@ -137,6 +343,10 @@ export default {
 
   th {
     background-color: #f2f2f2;
+  }
+
+  .request-form {
+    margin-top: 20px;
   }
 }
 </style>
