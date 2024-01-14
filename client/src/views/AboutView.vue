@@ -3,7 +3,7 @@
     <h1>This is an about page</h1>
     <div v-if="loading">Loading...</div>
     <div v-else>
-      <h2>Results12312 from /get/1:</h2>
+      <h2>Results from /get/1:</h2>
       <table>
         <thead>
           <tr>
@@ -20,6 +20,12 @@
           </tr>
         </tbody>
       </table>
+
+      <!-- Display the response beneath the form -->
+      <div v-if="updatedResult">
+        <h2>Response:</h2>
+        <pre>{{ JSON.stringify(updatedResult, null, 2) }}</pre>
+      </div>
 
       <div class="request-form">
         <h2>Make a Request</h2>
@@ -95,8 +101,8 @@ export default {
         .then((response) => response.json())
         .then((data) => {
           this.updatedResult = data;
-          // Display the response beneath the form
-          alert(`Response: ${JSON.stringify(data)}`);
+          // Update the table data after a successful request
+          this.fetchData();
         })
         .catch((error) => {
           console.error('Error sending request:', error);
@@ -106,7 +112,6 @@ export default {
   },
 };
 </script>
-
 
 <style>
 @media (min-width: 1024px) {
