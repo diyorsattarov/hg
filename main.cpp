@@ -1,5 +1,5 @@
-#include "include/db.h"
-#include "include/util.h"
+#include "include/db.hpp"
+#include "include/util.hpp"
 #include <httplib.h>
 #include <iostream>
 #include <unordered_map>
