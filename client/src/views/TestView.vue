@@ -4,35 +4,36 @@
         <div v-if="loading">Loading...</div>
         <div v-else>
             <h2>Results from /get/1:</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th v-for="(value, key) in result[0]" :key="key">{{ key }}</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="row in sortedResult" :key="row.task_id">
-                        <td>{{ row.task_id }}</td>
-                        <td>{{ row.task }}</td>
-                        <td>{{ row.day_id }}</td>
-                        <td>{{ formatDate(row.start_datetime) }}</td>
-                        <td>{{ formatDate(row.end_datetime) }}</td>
-                        <td>
-                            <button @click="editRow(row)">Edit</button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+            <template v-if="result && result.data && result.data.length > 0">
+                <table>
+                    <tbody>
+                        <tr v-for="row in sortedResult" :key="row.task_id">
+                            <td>{{ row.task_id }}</td>
+                            <td>{{ row.task }}</td>
+                            <td>{{ row.day_id }}</td>
+                            <td>{{ formatTime(row.start_datetime) }}</td>
+                            <td>{{ formatTime(row.end_datetime) }}</td>
+                            <td>
+                                <button @click="editRow(row)">Edit</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </template>
+            <template v-else>
+                No elements found.
+            </template>
+
 
             <!-- Edit Form -->
             <div class="request-form" v-if="editingRow">
                 <h2>Edit Data</h2>
 
                 <!-- Input field for each column -->
-                <div v-for="(value, key) in editingRow" :key="key">
+                <div v-if="editingRow" v-for="(value, key) in editingRow" :key="key">
                     <label :for="`${key}EditInput`">{{ key }}:</label>
-                    <input v-model="editingRow[key]" :id="`${key}EditInput`" />
+                    <input v-if="editingRow[key] !== null && editingRow[key] !== undefined" v-model="editingRow[key]"
+                        :id="`${key}EditInput`" />
                 </div>
 
                 <!-- Dropdown for HTTP Method -->
@@ -40,11 +41,15 @@
                     <label for="httpMethodEdit">HTTP Method:</label>
                     <select v-model="selectedMethodEdit" id="httpMethodEdit">
                         <option value="PUT">PUT</option>
+                        <option value="DELETE">DELETE</option>
                     </select>
                 </div>
 
                 <button @click="updateData">Update Data</button>
+                <button @click="deleteData">Delete Data</button>
+
             </div>
+
         </div>
     </div>
 </template>
@@ -73,20 +78,27 @@ export default {
     },
     computed: {
         sortedResult() {
-            return this.result.data.slice().sort((a, b) => {
-                // Convert the date strings to Date objects for proper comparison
-                const dateA = new Date(a.start_datetime);
-                const dateB = new Date(b.start_datetime);
+            return (this.result && this.result.data && this.result.data.length > 0) ?
+                this.result.data.slice().sort((a, b) => {
+                    // Convert the date strings to Date objects for proper comparison
+                    const dateA = new Date(a.start_datetime);
+                    const dateB = new Date(b.start_datetime);
 
-                // Sort in descending order (most recent to latest)
-                return dateB - dateA;
-            });
+                    // Sort in descending order (most recent to latest)
+                    return dateB - dateA;
+                }) :
+                [];
         },
     },
     methods: {
         fetchData() {
             fetch('http://localhost:3000/get/1')
-                .then((response) => response.json())
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
                 .then((data) => {
                     this.loading = false;
                     this.result = data;
@@ -94,13 +106,19 @@ export default {
                 .catch((error) => {
                     console.error('Error fetching data:', error);
                     this.loading = false;
-                    this.result = 'Error fetching data';
+                    this.result = { data: [] }; // Provide an empty data array to prevent further issues
                 });
         },
+
         formatDate(dateString) {
             const date = new Date(dateString);
             const options = { hour: 'numeric', minute: 'numeric', hour12: false };
             return date.toLocaleDateString('en-US', options);
+        },
+        formatTime(dateTimeString) {
+            const date = new Date(dateTimeString);
+            const options = { hour: 'numeric', minute: 'numeric', hour12: false };
+            return date.toLocaleTimeString('en-US', options);
         },
         editRow(row) {
             // Make a copy of the row for editing
@@ -148,8 +166,42 @@ export default {
                 });
         },
 
+        deleteData() {
+            const fullEndpoint = `http://localhost:3000/delete/1`;
 
+            const requestData = {
+                where: `task_id='${this.editingRow.task_id}' AND day_id='${this.editingRow.day_id}'`,
+            };
 
+            const requestOptions = {
+                method: 'DELETE', // Change to DELETE method
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData),
+            };
+
+            fetch(fullEndpoint, requestOptions)
+                .then((response) => {
+                    // Check if the response is successful
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    // Check if the response is valid JSON
+                    return response.json();
+                })
+                .then((data) => {
+                    this.updatedResult = data;
+                    // Update the table data after a successful request
+                    this.fetchData();
+                    // Clear the editing state
+                    this.editingRow = null;
+                })
+                .catch((error) => {
+                    console.error('Error deleting data:', error);
+                    this.updatedResult = 'Error deleting data';
+                });
+        },
     },
 };
 </script>
