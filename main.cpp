@@ -26,39 +26,45 @@ void handle_request(const httplib::Request &req, httplib::Response &res) {
   DatabaseConnector dbConnector(kDbName, kDbUser, kDbPassword, kDbHost,
                                 kDbPort);
 
-  if (req.method == "GET") {
+ if (req.method == "GET") {
     // Handle GET request
     std::string query =
         "SELECT * FROM " + getMonthString(static_cast<Month>(month)) + ";";
 
     if (dbConnector.connect()) {
-      // Fetch both column names and data
-      pqxx::result result = dbConnector.executeQuery(query);
-      json jsonResult;
+        // Fetch both column names and data
+        pqxx::result result = dbConnector.executeQuery(query);
+        json jsonResult;
 
-      // Extract column names
-      json columnNames;
-      for (size_t i = 0; i < result.columns(); ++i) {
-        columnNames.push_back(result.column_name(i));
-      }
-      jsonResult["columns"] = columnNames;
-
-      // Extract data rows
-      json dataRows;
-      for (const auto &row : result) {
-        json jsonRow;
-        for (size_t i = 0; i < row.size(); ++i) {
-          jsonRow[result.column_name(i)] = row[i].c_str();
+        // Check if there are no rows returned
+        if (result.size() == 0) {
+            res.set_content("No elements found", "text/plain");
+            return;
         }
-        dataRows.push_back(jsonRow);
-      }
-      jsonResult["data"] = dataRows;
 
-      res.set_content(jsonResult.dump(), "application/json");
+        // Extract column names
+        json columnNames;
+        for (size_t i = 0; i < result.columns(); ++i) {
+            columnNames.push_back(result.column_name(i));
+        }
+        jsonResult["columns"] = columnNames;
+
+        // Extract data rows
+        json dataRows;
+        for (const auto &row : result) {
+            json jsonRow;
+            for (size_t i = 0; i < row.size(); ++i) {
+                jsonRow[result.column_name(i)] = row[i].c_str();
+            }
+            dataRows.push_back(jsonRow);
+        }
+        jsonResult["data"] = dataRows;
+
+        res.set_content(jsonResult.dump(), "application/json");
     } else {
-      res.set_content("Failed to execute SQL select query", "text/plain");
+        res.set_content("Failed to execute SQL select query", "text/plain");
     }
-  } else if (req.method == "POST") {
+} else if (req.method == "POST") {
     // Handle POST request
     if (req.body.empty() || req.body[0] != '{') {
       res.set_content("Invalid or empty JSON data in the request body",
@@ -168,9 +174,9 @@ int main() {
              });
 
   server.Delete(kDeleteEndpoint,
-                [](const httplib::Request &req, httplib::Response &res) {
-                  handle_request(req, res);
-                });
+              [](const httplib::Request &req, httplib::Response &res) {
+                handle_request(req, res);
+              });
 
   server.listen("localhost", 8080);
 
