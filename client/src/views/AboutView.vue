@@ -4,22 +4,26 @@
     <div v-if="loading">Loading...</div>
     <div v-else>
       <h2>Results from /get/1:</h2>
-      <table>
-        <thead>
-          <tr>
-            <th v-for="(value, key) in result[0]" :key="key">{{ key }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="row in sortedResult" :key="row.task_id">
-            <td>{{ row.task_id }}</td>
-            <td>{{ row.task }}</td>
-            <td>{{ row.day_id }}</td>
-            <td>{{ formatDate(row.start_datetime) }}</td>
-            <td>{{ formatDate(row.end_datetime) }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <template v-if="result && result.data && result.data.length > 0">
+        <table>
+          <tbody>
+            <tr v-for="row in sortedResult" :key="row.task_id">
+              <td>{{ row.task_id }}</td>
+              <td>{{ row.task }}</td>
+              <td>{{ row.day_id }}</td>
+              <td>{{ formatTime(row.start_datetime) }}</td>
+              <td>{{ formatTime(row.end_datetime) }}</td>
+              <td>
+                <button @click="editRow(row)">Edit</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </template>
+      <template v-else>
+        No elements found.
+      </template>
+
 
       <!-- Display the response beneath the form -->
       <div v-if="updatedResult">
@@ -184,41 +188,15 @@ export default {
           this.result = 'Error fetching data';
         });
     },
+    formatTime(dateTimeString) {
+      const date = new Date(dateTimeString);
+      const options = { hour: 'numeric', minute: 'numeric', hour12: false };
+      return date.toLocaleTimeString('en-US', options);
+    },
     formatDate(dateString) {
       const date = new Date(dateString);
       const options = { hour: 'numeric', minute: 'numeric', hour12: false };
       return date.toLocaleDateString('en-US', options);
-    },
-    sendRequest() {
-      let endpoint = '/insert/1';
-
-      if (this.selectedMethod === 'PUT') {
-        endpoint = '/update/1';
-      } else if (this.selectedMethod === 'DELETE') {
-        endpoint = '/delete/1';
-      }
-
-      const fullEndpoint = `http://localhost:3000${endpoint}`;
-
-      const requestOptions = {
-        method: this.selectedMethod,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: this.jsonInput,
-      };
-
-      fetch(fullEndpoint, requestOptions)
-        .then((response) => response.json())
-        .then((data) => {
-          this.updatedResult = data;
-          // Update the table data after a successful request
-          this.fetchData();
-        })
-        .catch((error) => {
-          console.error('Error sending request:', error);
-          this.updatedResult = 'Error sending request';
-        });
     },
     insertData() {
       const fullEndpoint = 'http://localhost:3000/insert/1';
@@ -247,6 +225,7 @@ export default {
           console.error('Error inserting data:', error);
           this.updatedResult = 'Error inserting data';
         });
+      1
     },
     updateData() {
       const fullEndpoint = `http://localhost:3000/update/1`;
@@ -254,16 +233,19 @@ export default {
       // Get the column names from the fetched data
       const columnNames = Object.keys(this.result[0]);
 
+      // Build the requestData object
       const requestData = {
-        columns: columnNames,
+        columns: [],
         values: [],
         where: `task_id='${this.taskIdUpdateInput}' AND day_id='${this.dayIdUpdateInput}'`, // Assuming 'task_id' is the unique identifier
       };
 
-      // Add fields to requestData.values only if they have a value
+      // Add fields to requestData.columns and requestData.values only if they have a value
       columnNames.forEach((columnName) => {
-        if (this[columnName + 'UpdateInput']) {
-          requestData.values.push(this[columnName + 'UpdateInput']);
+        const inputValue = this[columnName + 'UpdateInput'];
+        if (inputValue !== undefined && inputValue !== null) {
+          requestData.columns.push(columnName);
+          requestData.values.push(inputValue);
         }
       });
 
